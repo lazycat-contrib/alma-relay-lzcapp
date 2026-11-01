@@ -22,7 +22,7 @@ images:
     source: ghcr.io/yetone/alma-relay
     channel: custom
     sort: created
-    tag_regex: '^sha-[0-9a-f]{7}$'
+    tag_regex: '^latest$'
     delivery:
       mode: mirror
       require_digest_match: true

@@ -26,8 +26,8 @@ application:
 
 services:
   relay:
-    # upstream: ghcr.io/yetone/alma-relay:sha-287107d
-    image: ghcr.1ms.run/yetone/alma-relay:sha-287107d
+    # upstream: ghcr.io/yetone/alma-relay:latest@sha256:85b3e40e30fcab498ec99fea72b43aff451e73a323b5c0df7d0e263eaae4d10e
+    image: ghcr.1ms.run/yetone/alma-relay@sha256:85b3e40e30fcab498ec99fea72b43aff451e73a323b5c0df7d0e263eaae4d10e
     environment:
       - |-
         RELAY_REGISTRATION_KEY={{ .U.registration_secret | replace "\r" "" | replace "\n" "" }}
