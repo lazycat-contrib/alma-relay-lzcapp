@@ -1,0 +1,12 @@
+params:
+  - id: registration_secret
+    type: secret
+    name: Relay registration key
+    description: "Shared key desktops must present before they may register with this relay (at least 32 characters). Paste it into Alma under Account -> Paste a token manually. This is NOT the desktop pairing code; keep it private."
+    default_value: "$random(len=48)"
+    optional: false
+locales:
+  zh:
+    registration_secret:
+      name: 中继注册密钥
+      description: 桌面注册到本中继前必须出示的共享密钥，至少 32 个字符。请粘贴到桌面 Alma 的「Alma 账号 → 手动粘贴 token」处。它不是桌面配对码，请妥善保管、不要外传。

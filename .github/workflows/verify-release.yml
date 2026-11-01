@@ -1,0 +1,138 @@
+name: Verify Alma Relay Release on GitHub
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact LPK release tag
+        required: true
+        default: v1.0.0
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: alma-relay-release-verification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Download exact Release asset on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          ASSET_NAME="community.lazycat.app.almarelay-${RELEASE_TAG}.lpk"
+          echo "ASSET_NAME=$ASSET_NAME" >> "$GITHUB_ENV"
+          gh release view "$RELEASE_TAG" --json tagName,assets > release-metadata.json
+          gh release download "$RELEASE_TAG" --pattern "$ASSET_NAME" --dir verify-pkg
+      - name: Verify artifact, protocol exposure and registration fail-closed
+        shell: python
+        run: |
+          import hashlib, json, os, re, subprocess, sys, tarfile
+          from pathlib import Path
+
+          try:
+              import yaml
+          except ImportError:
+              subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--quiet', 'PyYAML==6.0.3'])
+              import yaml
+
+          name = os.environ['ASSET_NAME']
+          tag = os.environ['RELEASE_TAG']
+          version = tag.removeprefix('v')
+
+          meta = json.loads(Path('release-metadata.json').read_text())
+          assets = [a for a in meta['assets'] if a['name'] == name]
+          assert len(assets) == 1, assets
+          pkg = Path('verify-pkg') / name
+
+          h = hashlib.sha256()
+          with pkg.open('rb') as f:
+              for chunk in iter(lambda: f.read(8 * 1024 * 1024), b''):
+                  h.update(chunk)
+          assert 'sha256:' + h.hexdigest() == assets[0]['digest'], 'Release digest mismatch'
+
+          key_word = 'registration_secret'
+          with tarfile.open(pkg) as package:
+              names = set(package.getnames())
+              assert {'package.yml', 'manifest.yml', 'deploy_params.yml', 'content.tar', 'icon.png'} <= names, names
+
+              info = yaml.safe_load(package.extractfile('package.yml').read())
+              assert info['package'] == 'community.lazycat.app.almarelay'
+              assert str(info['version']) == version
+              assert info['name'] == 'Alma Relay'
+              assert info['license'] == 'MIT'
+              assert str(info['min_os_version']) == '1.5.0'
+              assert 'net.internet' in info['permissions']['required']
+
+              manifest_text = package.extractfile('manifest.yml').read().decode()
+              m = yaml.safe_load(manifest_text)
+              app = m['application']
+              assert app['subdomain'] == 'almarelay'
+              upstreams = app['upstreams']
+              assert any(u['location'] == '/package-licenses/' and u['backend'].startswith('file://') for u in upstreams)
+              assert any(u['location'] == '/guide/' and u['backend'].startswith('file://') for u in upstreams)
+              assert any(u['location'] == '/' and u['backend'] == 'http://relay:8787/' for u in upstreams)
+              entry_paths = {e['path'] for e in app['entries']}
+              assert '/guide/' in entry_paths and '/' in entry_paths
+              assert app['public_path'] == ['/'], app['public_path']
+
+              svc = m['services']['relay']
+              assert svc['image'].endswith(':sha-287107d'), svc['image']
+              assert svc['command'] == 'node /lzcapp/pkg/content/start.mjs'
+              assert 'binds' not in svc, 'relay must stay stateless'
+              env = svc['environment']
+              assert any(e.startswith('RELAY_REGISTRATION_KEY=') for e in env)
+              assert '.U.registration_secret' in '\n'.join(env)
+              assert any(e == 'HOST=0.0.0.0' for e in env)
+              assert any(e == 'PORT=8787' for e in env)
+              assert 'RELAY_TOKEN_SECRET' not in manifest_text
+              assert 'APNS' not in manifest_text
+
+              params = yaml.safe_load(package.extractfile('deploy_params.yml').read())
+              entry = params['params'][0]
+              assert entry['id'] == key_word
+              assert entry['type'] == 'secret'
+              assert entry['optional'] is False
+              assert entry['default_value'] == '$random(len=48)'
+
+              with tarfile.open(fileobj=package.extractfile('content.tar')) as content:
+                  members = content.getnames()
+                  def read(target):
+                      hits = [n for n in members if n.removeprefix('./') == target]
+                      assert len(hits) == 1, (target, hits)
+                      return content.extractfile(hits[0]).read().decode()
+
+                  start = read('start.mjs')
+                  guide = read('guide/index.html')
+                  license_text = read('licenses/COPYING.txt')
+
+              assert 'RELAY_REGISTRATION_KEY' in start
+              assert 'length < 32' in start
+              assert "import('/app/index.mjs')" in start
+              assert 'healthz' not in start and 'fetch(' not in start
+
+              assert 'MIT License' in license_text and 'yetone' in license_text
+
+              # The guide is a static page: no template expressions, no key value.
+              assert '{{' not in guide and '.U.' not in guide
+              assert not re.search(r'[A-Za-z0-9_-]{32,}', guide), 'guide must not embed a long secret-like token'
+              assert '/guide/' in guide or '远程访问' in guide
+
+              # No startup smoke/health gate and no file-picker interception added.
+              assert 'healthcheck' not in manifest_text
+              assert 'lzc-file-chooser' not in manifest_text
+
+          result = {
+              'verified': True,
+              'tag': tag,
+              'sha256': h.hexdigest(),
+              'size': pkg.stat().st_size,
+              'runtime_tested': False,
+          }
+          print(json.dumps(result))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('Independent cloud artifact verification\n\n' + json.dumps(result, indent=2) + '\n')

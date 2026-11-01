@@ -1,0 +1,18 @@
+package: community.lazycat.app.almarelay
+version: 1.0.0
+name: Alma Relay
+description: "Self-hosted relay that lets the Alma mobile app reach your desktop Alma from anywhere."
+min_os_version: "1.5.0"
+homepage: https://github.com/yetone/alma-relay
+author: yetone
+license: MIT
+permissions:
+  required:
+    - net.internet
+locales:
+  zh:
+    name: Alma Relay
+    description: "自托管中继，让手机上的 Alma 随时随地连接桌面上的 Alma。"
+  en:
+    name: Alma Relay
+    description: "Self-hosted relay that lets the Alma mobile app reach your desktop Alma from anywhere."

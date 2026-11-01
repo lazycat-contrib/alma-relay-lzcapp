@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alma Relay · 配置指南</title>
+<style>
+:root{color-scheme:light dark}
+body{margin:0;padding:32px 20px;font:16px/1.7 -apple-system,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;max-width:760px;margin:0 auto;background:#fbfbfd;color:#1c1c1e}
+@media (prefers-color-scheme:dark){body{background:#111113;color:#e8e8ea}h2{color:#f2f2f4}a{color:#7aa2ff}}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:#8a8a8e;font-size:14px;margin-bottom:28px}
+h2{font-size:17px;margin:30px 0 10px}
+p,li{font-size:15px}
+ol,ul{padding-left:22px}
+li{margin:6px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:rgba(127,127,127,.14);padding:1px 5px;border-radius:4px;word-break:break-all}
+.box{border:1px solid rgba(127,127,127,.3);border-radius:10px;padding:14px 16px;margin:14px 0}
+.warn{border-color:rgba(255,159,10,.5);background:rgba(255,159,10,.08)}
+.tip{border-color:rgba(48,209,88,.4);background:rgba(48,209,88,.08)}
+a{color:#0a63d8}
+footer{margin-top:36px;color:#8a8a8e;font-size:13px}
+</style>
+</head>
+<body>
+<h1>Alma Relay</h1>
+<div class="sub">自托管中继 · 让手机上的 Alma 连接桌面上的 Alma</div>
+
+<p>桌面上的 Alma 主动向外连接本中继，手机再通过中继访问桌面。不需要端口转发，不需要 VPN。开启端到端加密后，中继只转发密文。</p>
+
+<h2>一、在桌面 Alma 上配置</h2>
+<ol>
+  <li>打开「设置 → 远程访问」。</li>
+  <li>选择「使用自托管中继」，填入<b>本应用的根地址</b>（以 <code>https://</code> 开头）。地址末尾不要加 <code>/guide/</code> 或任何其他路径。</li>
+  <li>点击「使用此 relay」。</li>
+  <li>中继要求注册密钥：在「Alma 账号 → 手动粘贴 token」处粘贴部署时生成的那串密钥。</li>
+</ol>
+
+<div class="box warn">
+<b>注册密钥 ≠ 桌面配对码。</b>注册密钥只决定谁能把桌面注册到这台中继；配对码是桌面本地生成、用来给手机授权的。两者都不要发给别人。
+</div>
+
+<h2>二、连接手机</h2>
+<ol>
+  <li>用手机上的 Alma 扫描桌面显示的配对二维码。配对链接里已经带上了中继地址。</li>
+  <li>之前配对过其他中继的手机需要重新扫码一次。</li>
+</ol>
+
+<h2>三、必须知道的限制</h2>
+<div class="box warn">
+<b>没有官方 iOS 后台推送。</b>自托管中继不持有 Apple 推送密钥，「回复完成」「Alma 有问题」这类通知无法送达官方 iOS 应用。其余功能不受影响。
+</div>
+<div class="box warn">
+<b>没有 TURN 服务。</b>本应用未附带也未配置 TURN，手机查看桌面浏览器实时画面所需的 WebRTC 中转不可用；中继会返回 <code>TURN not configured</code>。
+</div>
+<div class="box warn">
+<b>网络可达性。</b>中继地址必须同时被桌面和手机的网络访问到。公开访问路径不等于自动开放公网域名或端口，跨网络访问通常还需要你自己的域名与转发方案。
+</div>
+
+<div class="box tip">
+<b>建议桌面使用 Alma 0.4.329 或更高版本并保持端到端加密开启。</b>从这个版本起，开启加密的桌面会拒绝中继发来的明文请求，因此即使中继运营者也无法直接调用桌面的 API。
+</div>
+
+<h2>四、数据与安全</h2>
+<ul>
+  <li>中继本身不写磁盘，不保存配对码、路由标识或流量。</li>
+  <li>中继按 <code>sha256(路由标识)</code> 转发，路由标识是连接码的单向派生值。</li>
+  <li>本应用没有数据库、账号体系或需要备份的业务数据，卸载即移除中继本身。</li>
+  <li>请始终通过 HTTPS 访问中继：加密保护内容，TLS 保护路由元数据。</li>
+  <li>怀疑密钥泄露时，在桌面「远程访问」里重新生成连接码即可让所有已配对手机失效。</li>
+</ul>
+
+<h2>五、验证状态</h2>
+<p>本包未做真机验证：桌面注册、手机配对、HTTP/SSE/WebSocket 隧道、长连接保持、断线重连、TURN 与 APNs 均未在设备上实测。中继的 <code>/healthz</code> 只报告进程存活与已注册桌面数量。</p>
+
+<footer>
+Alma Relay · MIT · <a href="https://github.com/yetone/alma-relay" target="_blank" rel="noopener noreferrer">上游项目</a> · 许可证全文见 <a href="../package-licenses/COPYING.txt">/package-licenses/COPYING.txt</a>
+</footer>
+</body>
+</html>

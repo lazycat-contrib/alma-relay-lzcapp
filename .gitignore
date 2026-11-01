@@ -1,0 +1,5 @@
+dist/
+*.lpk
+.lzc-cli-build*/
+node_modules/
+__pycache__/

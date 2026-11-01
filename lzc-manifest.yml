@@ -1,0 +1,54 @@
+application:
+  subdomain: almarelay
+  multi_instance: false
+  # The relay protocol is reached directly by the desktop agent (WSS /agent)
+  # and by paired phones (HTTPS/WSS /c/<routing-token>/...). Those clients
+  # cannot complete an interactive web login, so the relay host must be
+  # reachable without the platform login wall. The relay's own security
+  # boundary stays in place: registration requires RELAY_REGISTRATION_KEY,
+  # and a tunnel can only be addressed with the 256-bit routing token.
+  public_path:
+    - /
+  entries:
+    - id: guide
+      title: Setup guide
+      path: /guide/
+    - id: status
+      title: Service status
+      path: /
+  upstreams:
+    - location: /package-licenses/
+      backend: file:///lzcapp/pkg/content/licenses/
+    - location: /guide/
+      backend: file:///lzcapp/pkg/content/guide/
+    - location: /
+      backend: http://relay:8787/
+
+services:
+  relay:
+    # upstream: ghcr.io/yetone/alma-relay:sha-287107d
+    image: ghcr.1ms.run/yetone/alma-relay:sha-287107d
+    environment:
+      - |-
+        RELAY_REGISTRATION_KEY={{ .U.registration_secret | replace "\r" "" | replace "\n" "" }}
+      - HOST=0.0.0.0
+      - PORT=8787
+      - NODE_ENV=production
+      - MAX_BODY_MB=128
+    command: node /lzcapp/pkg/content/start.mjs
+
+usage: |
+  Alma Relay 是自托管中继：桌面上的 Alma 主动向外连接它，手机上的 Alma 再通过它访问桌面，无需端口转发或 VPN。
+
+  使用方法：
+  1. 先在桌面 Alma 打开「设置 → 远程访问」，选择「使用自托管中继」，填入本应用的访问地址（以 https:// 开头，使用应用根地址，不要带 /guide/ 路径），点击「使用此 relay」。
+  2. 把部署时生成的注册密钥粘贴到「Alma 账号 → 手动粘贴 token」位置。这个密钥只允许可信桌面注册到本中继，不是桌面配对码，请勿转发或公开。
+  3. 用手机 Alma 扫描桌面显示的配对二维码。之前配对其他 relay 的手机需要重新扫码。
+
+  安全与限制：
+  - 本应用的访问路径不再叠加懒猫网页登录，因为原生客户端无法完成网页登录；中继自身的安全边界是注册密钥加上桌面生成的 256 位连接码，建议桌面使用 Alma 0.4.329 或更高版本并保持端到端加密开启，此时中继只能看到密文。
+  - 本应用不包含官方 iOS 应用的后台推送（APNs）密钥，因此自托管中继无法向官方 iOS 应用推送「回复完成」等通知，其余功能不受影响。
+  - 本应用未附带 TURN 服务，也未配置 TURN，因此手机查看桌面浏览器实时画面所需的 WebRTC 中转不可用；中继会返回「TURN not configured」。
+  - 中继不写磁盘、不保存配对码或流量；仅本次部署的注册密钥保存在部署参数中。应用内没有账号、数据库或备份数据，卸载即移除中继本身。
+  - 应用访问地址必须同时被桌面和手机网络可达；仅设置公开路径不等于自动开放公网域名或端口，本包不保证任意网络下的连通性。
+  - 未做真机验证：桌面注册、手机配对、HTTP/SSE/WebSocket 隧道、长连接保持与断线重连均未在设备上实测。
