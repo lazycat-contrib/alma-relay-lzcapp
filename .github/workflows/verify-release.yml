@@ -81,7 +81,7 @@ jobs:
               assert app['public_path'] == ['/'], app['public_path']
 
               svc = m['services']['relay']
-              assert svc['image'].endswith('@sha256:85b3e40e30fcab498ec99fea72b43aff451e73a323b5c0df7d0e263eaae4d10e'), svc['image']
+              assert svc['image'].endswith('@sha256:2c6034248d33a994a7ec391e5c40e11d48cd4d090aadb2c1c0e1b81ed6ed1df5'), svc['image']
               assert svc['command'] == 'node /lzcapp/pkg/content/start.mjs'
               assert 'binds' not in svc, 'relay must stay stateless'
               env = svc['environment']
