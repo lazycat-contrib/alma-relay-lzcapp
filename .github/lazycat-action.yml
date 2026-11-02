@@ -11,7 +11,6 @@ update:
   version_source:
     type: image
     image: relay
-    bump: patch
 build:
   toolchains: []
   run_buildscript: false
@@ -21,17 +20,16 @@ images:
     service: relay
     source: ghcr.io/yetone/alma-relay
     channel: stable
-    sort: created
+    sort: semver
+    tag_regex: ^v?\d+\.\d+\.\d+$
     delivery:
       mode: mirror
       require_digest_match: true
-release:
-  use_github_release_notes: true
-  store_changelog_format: plain
 stores:
   official:
     enabled: false
   private:
-    enabled: false
-    name: Alma Relay
+    enabled: true
     skip_if_version_exists: true
+    name: Alma Relay
+    summary: Self-hosted relay for remote access to desktop Alma
