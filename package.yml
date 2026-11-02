@@ -1,5 +1,5 @@
 package: community.lazycat.app.almarelay
-version: 1.0.0
+version: 1.0.1
 name: Alma Relay
 description: "Self-hosted relay that lets the Alma mobile app reach your desktop Alma from anywhere."
 min_os_version: "1.5.0"

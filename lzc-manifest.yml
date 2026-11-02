@@ -23,11 +23,10 @@ application:
       backend: file:///lzcapp/pkg/content/guide/
     - location: /
       backend: http://relay:8787/
-
 services:
   relay:
-    # upstream: ghcr.io/yetone/alma-relay:latest@sha256:2c6034248d33a994a7ec391e5c40e11d48cd4d090aadb2c1c0e1b81ed6ed1df5
-    image: ghcr.1ms.run/yetone/alma-relay@sha256:2c6034248d33a994a7ec391e5c40e11d48cd4d090aadb2c1c0e1b81ed6ed1df5
+    # upstream: ghcr.io/yetone/alma-relay:latest@sha256:ed9a38477dbbcfbb6e5425ab995f55932c344099a60b97058ae84a4753ca6292
+    image: ghcr.1ms.run/yetone/alma-relay:latest@sha256:ed9a38477dbbcfbb6e5425ab995f55932c344099a60b97058ae84a4753ca6292
     environment:
       - |-
         RELAY_REGISTRATION_KEY={{ .U.registration_secret | replace "\r" "" | replace "\n" "" }}
@@ -36,7 +35,6 @@ services:
       - NODE_ENV=production
       - MAX_BODY_MB=128
     command: node /lzcapp/pkg/content/start.mjs
-
 usage: |
   Alma Relay 是自托管中继：桌面上的 Alma 主动向外连接它，手机上的 Alma 再通过它访问桌面，无需端口转发或 VPN。
 
