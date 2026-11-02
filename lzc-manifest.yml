@@ -25,8 +25,8 @@ application:
       backend: http://relay:8787/
 services:
   relay:
-    # upstream:  ghcr.io/yetone/alma-relay:1.2.0
-    image: ghcr.1ms.run/yetone/alma-relay:latest@sha256:ed9a38477dbbcfbb6e5425ab995f55932c344099a60b97058ae84a4753ca6292
+    # upstream: ghcr.io/yetone/alma-relay:1.2.0
+    image: ghcr.1ms.run/yetone/alma-relay:1.2.0
     environment:
       - |-
         RELAY_REGISTRATION_KEY={{ .U.registration_secret | replace "\r" "" | replace "\n" "" }}
