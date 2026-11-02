@@ -20,9 +20,8 @@ images:
     target: service
     service: relay
     source: ghcr.io/yetone/alma-relay
-    channel: custom
+    channel: stable
     sort: created
-    tag_regex: '^latest$'
     delivery:
       mode: mirror
       require_digest_match: true
