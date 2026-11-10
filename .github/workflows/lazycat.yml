@@ -1,5 +1,7 @@
 name: Build Alma Relay LPK
 on:
+  schedule:
+    - cron: "7 1 * * *"
   workflow_dispatch:
 permissions:
   contents: write
